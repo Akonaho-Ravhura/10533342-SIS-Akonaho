@@ -1,0 +1,95 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Course registration";
+    var store = (DataStore)ViewBag.Store;
+    var p = (StudentProfile)ViewBag.Profile;
+    var mine = (List<Enrollment>)ViewBag.Enrollments;
+    var active = mine.Where(e => e.Status is EnrollmentStatus.Pending or EnrollmentStatus.Approved).ToList();
+    var activeCodes = active.Select(e => e.CourseCode).ToHashSet();
+    var canRegister = p.Status == StudentStatus.Active;
+}
+<div class="page-head">
+    <div><h1>Course registration</h1><p>Semester 1 2026 · Select the courses you want to take and submit for approval.</p></div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header"><i class="bi bi-journal-check"></i> My registrations</div>
+    @if (active.Count == 0) { <div class="card-body text-muted">You have not registered for any courses yet.</div> }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr><th>Code</th><th>Course</th><th>Credits</th><th>Fee</th><th>Requested</th><th>Status</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var e in active)
+                {
+                    var c = store.Course(e.CourseCode);
+                    <tr>
+                        <td><span class="badge badge-soft">@e.CourseCode</span></td>
+                        <td>@c?.Name</td>
+                        <td>@c?.Credits</td>
+                        <td>R @c?.Fee.ToString("N0")</td>
+                        <td class="small text-muted">@e.RequestedAt.ToString("d MMM yyyy")</td>
+                        <td><span class="status status-@e.Status">@e.Status</span></td>
+                        <td class="text-end">
+                            @if (!e.Assessments.Any(a => a.Mark.HasValue))
+                            {
+                                <form asp-action="Drop" method="post" class="d-inline" onsubmit="return confirm('Drop @e.CourseCode?')">
+                                    <input type="hidden" name="id" value="@e.Id" />
+                                    <button class="btn btn-sm btn-outline-danger">Drop</button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot><tr class="fw-semibold"><td colspan="2">Total</td><td>@active.Sum(e => store.Course(e.CourseCode)?.Credits ?? 0)</td><td>R @active.Sum(e => store.Course(e.CourseCode)?.Fee ?? 0).ToString("N0")</td><td colspan="3"></td></tr></tfoot>
+            </table>
+        </div>
+    }
+</div>
+
+@if (!canRegister)
+{
+    <div class="alert alert-warning"><i class="bi bi-lock"></i> Course registration opens once your application has been approved by the Registrar's Office.</div>
+}
+
+<form asp-action="Register" method="post">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h2 class="h5 fw-bold text-navy m-0">Available courses</h2>
+        <button class="btn btn-primary" type="submit" @(canRegister ? "" : "disabled")><i class="bi bi-check2-square"></i> Submit registration</button>
+    </div>
+    @foreach (var g in Model.GroupBy(c => c.Programme))
+    {
+        <div class="week-label">@g.Key @if (g.Key == p.Programme) { <span class="badge bg-primary ms-1">Your programme</span> }</div>
+        <div class="row g-3">
+            @foreach (var c in g)
+            {
+                var taken = store.Data.Enrollments.Count(e => e.CourseCode == c.Code && e.Status == EnrollmentStatus.Approved);
+                var full = taken >= c.Capacity;
+                var already = activeCodes.Contains(c.Code);
+                var disabled = already || full || !c.OpenForRegistration || !canRegister;
+                <div class="col-md-6 col-xl-4">
+                    <label class="course-pick d-block @(disabled ? "opacity-75" : "")" style="cursor:@(disabled ? "default" : "pointer")">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="form-check m-0">
+                                <input class="form-check-input" type="checkbox" name="codes" value="@c.Code" @(disabled ? "disabled" : "") @(already ? "checked" : "") />
+                                <span class="badge badge-soft">@c.Code</span>
+                            </div>
+                            <span class="small text-muted">@c.Credits credits · R @c.Fee.ToString("N0")</span>
+                        </div>
+                        <div class="fw-semibold mt-2">@c.Name</div>
+                        <div class="small text-muted mb-2">@c.Description</div>
+                        <div class="d-flex justify-content-between small">
+                            <span><i class="bi bi-person"></i> @store.UserName(c.LecturerId)</span>
+                            @if (already) { <span class="text-primary fw-semibold">Registered</span> }
+                            else if (!c.OpenForRegistration) { <span class="text-danger">Closed</span> }
+                            else if (full) { <span class="text-danger">Full</span> }
+                            else { <span class="text-muted">@(c.Capacity - taken) seats left</span> }
+                        </div>
+                    </label>
+                </div>
+            }
+        </div>
+    }
+</form>

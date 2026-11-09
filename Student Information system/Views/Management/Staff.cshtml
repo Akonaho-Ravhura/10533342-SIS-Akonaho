@@ -1,0 +1,53 @@
+@model List<AppUser>
+@{
+    ViewData["Title"] = "Staff";
+    var store = (DataStore)ViewBag.Store;
+    var me = (AppUser)ViewBag.Me;
+}
+<div class="page-head"><div><h1>Staff accounts</h1><p>Lecturers and management users who can access the system.</p></div></div>
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Department</th><th>Courses</th><th>Status</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var u in Model)
+                    {
+                        <tr>
+                            <td class="fw-semibold">@u.FullName<div class="small text-muted fw-normal">@u.Email</div></td>
+                            <td>@u.Username</td>
+                            <td><span class="badge badge-soft">@u.Role</span></td>
+                            <td class="small">@u.Department</td>
+                            <td class="small">@string.Join(", ", store.Data.Courses.Where(c => c.LecturerId == u.Id).Select(c => c.Code))</td>
+                            <td>@if (u.Active) { <span class="status status-Active">Active</span> } else { <span class="status status-Suspended">Disabled</span> }</td>
+                            <td class="text-end">
+                                @if (u.Id != me.Id)
+                                {
+                                    <form asp-action="ToggleStaff" method="post"><input type="hidden" name="id" value="@u.Id" /><button class="btn btn-sm @(u.Active ? "btn-outline-danger" : "btn-outline-success")">@(u.Active ? "Disable" : "Enable")</button></form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-person-plus"></i> Add staff member</div>
+            <div class="card-body">
+                <form asp-action="AddStaff" method="post" class="row g-3">
+                    <div class="col-12"><label class="form-label">Full name</label><input name="fullName" class="form-control" required /></div>
+                    <div class="col-12"><label class="form-label">Email</label><input name="email" type="email" class="form-control" /></div>
+                    <div class="col-6"><label class="form-label">Username</label><input name="username" class="form-control" required /></div>
+                    <div class="col-6"><label class="form-label">Role</label><select name="role" class="form-select"><option>Lecturer</option><option>Management</option></select></div>
+                    <div class="col-12"><label class="form-label">Department</label><input name="department" class="form-control" /></div>
+                    <div class="col-12"><label class="form-label">Temporary password</label><input name="password" type="password" class="form-control" minlength="8" autocomplete="new-password" required /></div>
+                    <div class="col-12"><button class="btn btn-primary w-100">Create account</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

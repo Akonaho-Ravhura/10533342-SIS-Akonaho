@@ -1,0 +1,41 @@
+@model List<Enrollment>
+@{
+    ViewData["Title"] = "Results";
+    var store = (DataStore)ViewBag.Store;
+}
+<div class="page-head">
+    <div><h1>My results</h1><p>Marks are updated by your lecturers as assessments are graded.</p></div>
+    <a asp-action="Transcript" class="btn btn-outline-primary"><i class="bi bi-printer"></i> Academic record</a>
+</div>
+@if (Model.Count == 0) { <div class="card card-body text-muted">No approved course registrations yet.</div> }
+<div class="row g-4">
+@foreach (var e in Model)
+{
+    var c = store.Course(e.CourseCode);
+    <div class="col-xl-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><span class="badge badge-soft me-2">@e.CourseCode</span>@c?.Name</span>
+                <span class="status status-@e.Result.Split(' ')[0]">@e.Result</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Assessment</th><th class="text-center">Weight</th><th class="text-end">Mark</th></tr></thead>
+                    <tbody>
+                    @foreach (var a in e.Assessments)
+                    {
+                        <tr><td>@a.Name</td><td class="text-center text-muted">@a.Weight%</td><td class="text-end fw-semibold">@(a.Mark.HasValue ? a.Mark.Value.ToString("0.#") + "%" : "—")</td></tr>
+                    }
+                    </tbody>
+                    <tfoot><tr class="fw-bold text-navy"><td colspan="2">Weighted mark (so far)</td><td class="text-end">@(e.FinalMark.HasValue ? e.FinalMark.Value.ToString("0.0") + "%" : "—")</td></tr></tfoot>
+                </table>
+            </div>
+            @if (!string.IsNullOrEmpty(e.LecturerComment))
+            {
+                <div class="card-body border-top small"><i class="bi bi-chat-left-quote text-primary"></i> <strong>Lecturer:</strong> @e.LecturerComment</div>
+            }
+            @if (e.MarksUpdatedAt.HasValue) { <div class="px-3 pb-3 small text-muted">Last updated @Ago(e.MarksUpdatedAt.Value)</div> }
+        </div>
+    </div>
+}
+</div>

@@ -1,0 +1,38 @@
+@model StudentProfile
+@{ ViewData["Title"] = "My profile"; }
+<div class="page-head"><div><h1>My profile</h1><p>Personal details are managed by the Registrar. You can update your contact details.</p></div></div>
+<div class="row g-4">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-person-vcard"></i> Student record</div>
+            <div class="card-body">
+                <dl class="dl-grid">
+                    <dt>Student number</dt><dd class="fw-semibold">@Model.StudentNumber</dd>
+                    <dt>Full name</dt><dd>@Model.FullName</dd>
+                    <dt>ID / Passport</dt><dd>@Model.IdNumber</dd>
+                    <dt>Date of birth</dt><dd>@Model.DateOfBirth?.ToString("d MMMM yyyy")</dd>
+                    <dt>Gender</dt><dd>@Model.Gender</dd>
+                    <dt>Programme</dt><dd>@Model.Programme</dd>
+                    <dt>High school</dt><dd>@Model.HighSchool (@Model.MatricYear)</dd>
+                    <dt>Status</dt><dd><span class="status status-@Model.Status">@Model.Status</span></dd>
+                    <dt>Registered</dt><dd>@Model.RegisteredAt.ToString("d MMMM yyyy")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-telephone"></i> Contact details</div>
+            <div class="card-body">
+                <form asp-action="MyProfile" method="post" class="row g-3">
+                    <div class="col-md-6"><label class="form-label">Cell phone</label><input name="phone" value="@Model.Phone" class="form-control" required /></div>
+                    <div class="col-md-6"><label class="form-label">Email</label><input name="email" type="email" value="@Model.Email" class="form-control" required /></div>
+                    <div class="col-12"><label class="form-label">Address</label><textarea name="address" class="form-control" rows="2" required>@Model.Address</textarea></div>
+                    <div class="col-md-6"><label class="form-label">Next of kin</label><input name="nextOfKinName" value="@Model.NextOfKinName" class="form-control" /></div>
+                    <div class="col-md-6"><label class="form-label">Next of kin phone</label><input name="nextOfKinPhone" value="@Model.NextOfKinPhone" class="form-control" /></div>
+                    <div class="col-12"><button class="btn btn-primary">Save changes</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

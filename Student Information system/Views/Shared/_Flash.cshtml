@@ -1,0 +1,11 @@
+@if (TempData["Flash"] is string flash)
+{
+    var kind = TempData["FlashKind"] as string ?? "success";
+    var icon = kind switch { "danger" => "x-circle", "warning" => "exclamation-triangle", _ => "check-circle" };
+    <div class="container-fluid flash-wrap">
+        <div class="alert alert-@kind alert-dismissible fade show d-flex align-items-start gap-2" role="alert">
+            <i class="bi bi-@icon mt-1"></i><div>@flash</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </div>
+}

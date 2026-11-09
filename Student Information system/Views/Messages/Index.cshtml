@@ -1,0 +1,37 @@
+@model List<Message>
+@{
+    ViewData["Title"] = "Communications";
+    var store = (DataStore)ViewBag.Store;
+    var me = (AppUser)ViewBag.Me;
+    var box = (string)ViewBag.Box;
+}
+<div class="page-head">
+    <div><h1>Communications</h1><p>Important notices from the college, your lecturers and management.</p></div>
+    @if (me.Role != Roles.Student) { <a asp-action="Compose" class="btn btn-primary"><i class="bi bi-send"></i> New message</a> }
+</div>
+@if (me.Role != Roles.Student)
+{
+    <ul class="nav nav-pills mb-3">
+        <li class="nav-item"><a class="nav-link @(box == "inbox" ? "active" : "")" asp-action="Index">@(me.Role == Roles.Management ? "All communications" : "Inbox")</a></li>
+        <li class="nav-item"><a class="nav-link @(box == "sent" ? "active" : "")" asp-action="Index" asp-route-box="sent">Sent by me</a></li>
+    </ul>
+}
+<div class="card">
+    @if (Model.Count == 0) { <div class="card-body text-muted">No messages.</div> }
+    @foreach (var m in Model)
+    {
+        var unread = m.SenderId != me.Id && !m.ReadBy.Contains(me.Id) && me.Role != Roles.Management;
+        <a asp-action="Read" asp-route-id="@m.Id" class="msg-item prio-@m.Priority @(unread ? "unread" : "")">
+            <div class="d-flex justify-content-between gap-2 flex-wrap">
+                <div>
+                    @if (unread) { <span class="badge bg-primary me-1">New</span> }
+                    @if (m.Priority != "Normal") { <span class="badge @(m.Priority == "Urgent" ? "bg-danger" : "bg-warning text-dark") me-1">@m.Priority</span> }
+                    <span class="subj">@m.Subject</span>
+                </div>
+                <small class="text-muted">@Ago(m.SentAt)</small>
+            </div>
+            <div class="small text-muted mb-1">From <strong>@store.UserName(m.SenderId)</strong> to @store.AudienceLabel(m.Audience)@(m.SenderId == me.Id || me.Role == Roles.Management ? $" · read by {m.ReadBy.Count}" : "")</div>
+            <div class="snippet">@m.Body</div>
+        </a>
+    }
+</div>

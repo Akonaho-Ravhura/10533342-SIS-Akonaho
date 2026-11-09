@@ -1,0 +1,6 @@
+bin/
+obj/
+.vs/
+*.user
+# Prototype data store and uploaded student documents (IDs, certificates) - never commit these
+App_Data/

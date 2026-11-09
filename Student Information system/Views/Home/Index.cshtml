@@ -1,0 +1,62 @@
+﻿@model List<Course>
+@{
+    ViewData["Title"] = "Welcome";
+    ViewData["Public"] = true;
+    var store = (DataStore)ViewBag.Store;
+}
+<section class="hero">
+    <div class="container position-relative" style="z-index:1">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-7">
+                <span class="badge rounded-pill bg-light text-primary mb-3 px-3 py-2">2027 applications now open</span>
+                <h1>Horizon Private Training College</h1>
+                <p class="lead mt-3">Apply, register for courses, access your study material, check your results and stay up to date with college news — all in one place.</p>
+                <div class="d-flex flex-wrap gap-2 mt-4">
+                    <a asp-controller="Account" asp-action="Apply" class="btn btn-light btn-lg px-4 text-primary fw-semibold"><i class="bi bi-pencil-square"></i> Apply online</a>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg px-4"><i class="bi bi-box-arrow-in-right"></i> Portal login</a>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="hero-card">
+                    <div class="d-flex gap-3 mb-3"><i class="bi bi-mortarboard"></i><div><strong>Students</strong><div class="small opacity-75">Register for courses, view marks, download notes</div></div></div>
+                    <div class="d-flex gap-3 mb-3"><i class="bi bi-person-workspace"></i><div><strong>Lecturers</strong><div class="small opacity-75">Capture marks, publish content, message classes</div></div></div>
+                    <div class="d-flex gap-3"><i class="bi bi-building"></i><div><strong>Management</strong><div class="small opacity-75">Student records, documents, approvals and announcements</div></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="container py-5">
+    <div class="row g-4">
+        <div class="col-md-6 col-lg-3"><div class="feature"><div class="icon"><i class="bi bi-journal-plus"></i></div><h5>Online registration</h5><p class="text-muted mb-0">Apply and register for courses from anywhere, with approval tracked online.</p></div></div>
+        <div class="col-md-6 col-lg-3"><div class="feature"><div class="icon"><i class="bi bi-folder-check"></i></div><h5>Secure records</h5><p class="text-muted mb-0">ID copies, certificates and academic records stored and retrievable in seconds.</p></div></div>
+        <div class="col-md-6 col-lg-3"><div class="feature"><div class="icon"><i class="bi bi-bar-chart-line"></i></div><h5>Marks &amp; results</h5><p class="text-muted mb-0">Lecturers capture marks; students see results and printable transcripts.</p></div></div>
+        <div class="col-md-6 col-lg-3"><div class="feature"><div class="icon"><i class="bi bi-megaphone"></i></div><h5>Communication</h5><p class="text-muted mb-0">Important notices to everyone, a class, or an individual student.</p></div></div>
+    </div>
+</section>
+
+<section class="container" id="courses">
+    <h2 class="section-title mb-1">Courses open for registration</h2>
+    <p class="text-muted mb-4">Semester 1 2026 offerings</p>
+    @foreach (var g in Model.GroupBy(c => c.Programme))
+    {
+        <h6 class="text-uppercase text-primary fw-bold small mt-4 mb-3">@g.Key</h6>
+        <div class="row g-3">
+            @foreach (var c in g)
+            {
+                <div class="col-md-6 col-lg-4">
+                    <div class="feature">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge badge-soft">@c.Code</span>
+                            <span class="small text-muted">@c.Credits credits</span>
+                        </div>
+                        <h6 class="fw-semibold">@c.Name</h6>
+                        <p class="small text-muted mb-2">@c.Description</p>
+                        <div class="small"><i class="bi bi-person"></i> @store.UserName(c.LecturerId)</div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</section>

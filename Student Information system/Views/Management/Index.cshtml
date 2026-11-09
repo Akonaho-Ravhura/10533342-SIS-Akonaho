@@ -1,0 +1,91 @@
+@{
+    ViewData["Title"] = "Management dashboard";
+    var store = (DataStore)ViewBag.Store;
+    var d = store.Data;
+    var me = (AppUser)ViewBag.Me;
+    var applicants = (List<StudentProfile>)ViewBag.Applicants;
+    var pendingEnr = (List<Enrollment>)ViewBag.PendingEnrollments;
+    var recent = (List<Message>)ViewBag.RecentMessages;
+    var active = d.Students.Count(s => s.Status == StudentStatus.Active);
+}
+<div class="card welcome mb-4">
+    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="text-muted small">Management portal · @me.Department</div>
+            <h1 class="h3 fw-bold mb-0">Good day, @me.FullName</h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Messages" asp-action="Compose" class="btn btn-light text-primary fw-semibold"><i class="bi bi-megaphone"></i> Send announcement</a>
+            <a asp-action="Students" class="btn btn-outline-light"><i class="bi bi-search"></i> Find student</a>
+        </div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><a asp-action="Students" asp-route-status="Active" class="text-decoration-none"><div class="card stat"><div class="icon"><i class="bi bi-people"></i></div><div><div class="val">@active</div><div class="lbl">Active students</div></div></div></a></div>
+    <div class="col-sm-6 col-xl-3"><a asp-action="Students" asp-route-status="Applicant" class="text-decoration-none"><div class="card stat"><div class="icon"><i class="bi bi-person-plus"></i></div><div><div class="val">@applicants.Count</div><div class="lbl">New applications</div></div></div></a></div>
+    <div class="col-sm-6 col-xl-3"><a asp-action="Registrations" class="text-decoration-none"><div class="card stat"><div class="icon"><i class="bi bi-journal-check"></i></div><div><div class="val">@pendingEnr.Count</div><div class="lbl">Course registrations to approve</div></div></div></a></div>
+    <div class="col-sm-6 col-xl-3"><a asp-action="Documents" class="text-decoration-none"><div class="card stat"><div class="icon"><i class="bi bi-file-earmark-check"></i></div><div><div class="val">@ViewBag.UnverifiedDocs</div><div class="lbl">Documents to verify</div></div></div></a></div>
+</div>
+<div class="row g-4">
+    <div class="col-xl-6">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person-plus"></i> Applications awaiting review</div>
+            @if (applicants.Count == 0) { <div class="card-body text-muted">No pending applications.</div> }
+            <ul class="list-group list-group-flush">
+            @foreach (var s in applicants)
+            {
+                var docs = d.Documents.Count(x => x.StudentId == s.UserId);
+                <li class="list-group-item d-flex align-items-center gap-3">
+                    <div class="avatar">@s.FirstName[0]@s.LastName[0]</div>
+                    <div class="flex-grow-1"><div class="fw-semibold">@s.FullName</div><div class="small text-muted">@s.Programme · @docs document(s) · applied @Ago(s.RegisteredAt)</div></div>
+                    <a asp-action="Student" asp-route-id="@s.UserId" class="btn btn-sm btn-primary">Review</a>
+                </li>
+            }
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between"><span><i class="bi bi-journal-check"></i> Course registrations pending</span><a asp-action="Registrations" class="small">Manage</a></div>
+            @if (pendingEnr.Count == 0) { <div class="card-body text-muted">Nothing pending.</div> }
+            <ul class="list-group list-group-flush">
+            @foreach (var e in pendingEnr.Take(6))
+            {
+                var s = store.Student(e.StudentId);
+                <li class="list-group-item d-flex align-items-center gap-2">
+                    <div class="flex-grow-1"><span class="fw-semibold">@s?.FullName</span> <span class="badge badge-soft ms-1">@e.CourseCode</span><div class="small text-muted">@Ago(e.RequestedAt)</div></div>
+                    <form asp-action="DecideRegistration" method="post" class="d-flex gap-1">
+                        <input type="hidden" name="ids" value="@e.Id" /><input type="hidden" name="returnTo" value="/Management" />
+                        <button name="approve" value="true" class="btn btn-sm btn-success" title="Approve"><i class="bi bi-check-lg"></i></button>
+                        <button name="approve" value="false" class="btn btn-sm btn-outline-danger" title="Reject"><i class="bi bi-x-lg"></i></button>
+                    </form>
+                </li>
+            }
+            </ul>
+        </div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-pie-chart"></i> Enrolment by programme</div>
+            <div class="card-body">
+                @foreach (var g in d.Students.Where(s => s.Status == StudentStatus.Active).GroupBy(s => s.Programme))
+                {
+                    var pct = active == 0 ? 0 : g.Count() * 100 / active;
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small mb-1"><span>@g.Key</span><strong>@g.Count()</strong></div>
+                        <div class="progress"><div class="progress-bar" style="width:@pct%"></div></div>
+                    </div>
+                }
+                <div class="small text-muted">@d.Courses.Count courses · @d.Users.Count(u => u.Role == Roles.Lecturer) lecturers</div>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header d-flex justify-content-between"><span><i class="bi bi-megaphone"></i> Recent communications</span><a asp-controller="Messages" asp-action="Index" class="small">All</a></div>
+            @foreach (var m in recent)
+            {
+                <a asp-controller="Messages" asp-action="Read" asp-route-id="@m.Id" class="msg-item prio-@m.Priority">
+                    <div class="d-flex justify-content-between"><span class="fw-semibold">@m.Subject</span><small class="text-muted ms-2 text-nowrap">@Ago(m.SentAt)</small></div>
+                    <div class="small text-muted">@store.UserName(m.SenderId) → @store.AudienceLabel(m.Audience)</div>
+                </a>
+            }
+        </div>
+    </div>
+</div>

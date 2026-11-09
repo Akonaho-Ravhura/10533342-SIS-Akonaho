@@ -1,0 +1,49 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Reports";
+    var store = (DataStore)ViewBag.Store;
+}
+<div class="page-head">
+    <div><h1>Academic reports</h1><p>Course performance overview for the current semester.</p></div>
+    <button class="btn btn-outline-primary no-print" onclick="window.print()"><i class="bi bi-printer"></i> Print</button>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table">
+            <thead><tr><th>Course</th><th>Lecturer</th><th class="text-center">Students</th><th class="text-center">Marked</th><th class="text-center">Average</th><th class="text-center">Pass rate</th><th style="width:22%">Distribution</th></tr></thead>
+            <tbody>
+            @foreach (var c in Model)
+            {
+                var en = store.Data.Enrollments.Where(e => e.CourseCode == c.Code && e.Status == EnrollmentStatus.Approved).ToList();
+                var finals = en.Where(e => e.FinalMark.HasValue).Select(e => e.FinalMark!.Value).ToList();
+                var pass = finals.Count(f => f >= 50);
+                var dist = finals.Count(f => f >= 75);
+                var fail = finals.Count - pass;
+                <tr>
+                    <td><span class="badge badge-soft me-1">@c.Code</span>@c.Name</td>
+                    <td class="small">@store.UserName(c.LecturerId)</td>
+                    <td class="text-center">@en.Count</td>
+                    <td class="text-center">@finals.Count</td>
+                    <td class="text-center fw-semibold">@(finals.Count > 0 ? finals.Average().ToString("0.0") + "%" : "—")</td>
+                    <td class="text-center">@(finals.Count > 0 ? (pass * 100 / finals.Count) + "%" : "—")</td>
+                    <td>
+                        @if (finals.Count > 0)
+                        {
+                            <div class="progress" style="height:.8rem" title="@dist distinction · @(pass - dist) pass · @fail fail">
+                                <div class="progress-bar" style="width:@(dist * 100 / finals.Count)%;background:#0b3d91"></div>
+                                <div class="progress-bar" style="width:@((pass - dist) * 100 / finals.Count)%;background:#6ea8f0"></div>
+                                <div class="progress-bar bg-danger" style="width:@(fail * 100 / finals.Count)%"></div>
+                            </div>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="card-body border-top small text-muted d-flex gap-3 flex-wrap">
+        <span><i class="bi bi-square-fill" style="color:#0b3d91"></i> Distinction (75%+)</span>
+        <span><i class="bi bi-square-fill" style="color:#6ea8f0"></i> Pass (50–74%)</span>
+        <span><i class="bi bi-square-fill text-danger"></i> Fail (&lt;50%)</span>
+    </div>
+</div>

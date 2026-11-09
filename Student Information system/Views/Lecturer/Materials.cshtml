@@ -1,0 +1,63 @@
+@model List<CourseMaterial>
+@{
+    ViewData["Title"] = "Course content";
+    var courses = (List<Course>)ViewBag.Courses;
+    var current = ViewBag.Current as Course;
+}
+<div class="page-head"><div><h1>Course content</h1><p>Publish notes, slides, assignments, videos and links to your students.</p></div></div>
+<ul class="nav nav-pills mb-3 gap-1 flex-wrap">
+    @foreach (var c in courses) { <li class="nav-item"><a class="nav-link @(c.Code == current?.Code ? "active" : "")" asp-action="Materials" asp-route-id="@c.Code">@c.Code</a></li> }
+</ul>
+@if (current == null) { <div class="card card-body text-muted">You have no courses assigned.</div> }
+else
+{
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cloud-upload"></i> Publish to @current.Code</div>
+            <div class="card-body">
+                <form asp-action="AddMaterial" method="post" enctype="multipart/form-data" class="row g-3">
+                    <input type="hidden" name="id" value="@current.Code" />
+                    <div class="col-12"><label class="form-label">Title</label><input name="title" class="form-control" required /></div>
+                    <div class="col-6"><label class="form-label">Week</label><input name="week" type="number" min="1" max="20" value="@(Model.Count > 0 ? Model.Max(m => m.Week) : 1)" class="form-control" /></div>
+                    <div class="col-6"><label class="form-label">Type</label><select name="kind" class="form-select"><option>Notes</option><option>Slides</option><option>Assignment</option><option>Video</option><option>Link</option></select></div>
+                    <div class="col-12"><label class="form-label">Description</label><textarea name="description" class="form-control" rows="2"></textarea></div>
+                    <div class="col-12"><label class="form-label">File</label><input type="file" name="file" class="form-control" /><div class="form-text">PDF, Office, images, ZIP or MP4 · max 20 MB</div></div>
+                    <div class="col-12"><label class="form-label">…or link</label><input name="url" type="url" class="form-control" placeholder="https://" /></div>
+                    <div class="col-12"><label class="form-label">Due date (assignments)</label><input name="dueDate" type="date" class="form-control" /></div>
+                    <div class="col-12"><button class="btn btn-primary w-100"><i class="bi bi-upload"></i> Publish</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        @if (Model.Count == 0) { <div class="card card-body text-muted">Nothing published yet.</div> }
+        @foreach (var wk in Model.GroupBy(m => m.Week))
+        {
+            <div class="week-label @(wk.Key == Model.First().Week ? "mt-0" : "")">Week @wk.Key</div>
+            <div class="d-flex flex-column gap-2">
+            @foreach (var m in wk)
+            {
+                <div class="material">
+                    <div class="kind"><i class="bi bi-@KindIcon(m.Kind)"></i></div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold">@m.Title <span class="badge badge-soft ms-1">@m.Kind</span></div>
+                        <div class="small text-muted">@m.Description</div>
+                        <div class="small mt-1">
+                            @if (m.StoredName != null) { <a asp-controller="Files" asp-action="Material" asp-route-id="@m.Id" target="_blank"><i class="bi bi-paperclip"></i> @m.FileName</a> }
+                            @if (m.Url != null) { <a href="@m.Url" target="_blank" rel="noopener" class="ms-2"><i class="bi bi-link-45deg"></i> Link</a> }
+                            @if (m.DueDate.HasValue) { <span class="ms-2 text-danger"><i class="bi bi-alarm"></i> Due @m.DueDate.Value.ToString("d MMM")</span> }
+                            <span class="ms-2 text-muted">· @Ago(m.UploadedAt)</span>
+                        </div>
+                    </div>
+                    <form asp-action="DeleteMaterial" method="post" onsubmit="return confirm('Remove this item?')">
+                        <input type="hidden" name="materialId" value="@m.Id" />
+                        <button class="btn btn-sm btn-outline-danger" title="Remove"><i class="bi bi-trash"></i></button>
+                    </form>
+                </div>
+            }
+            </div>
+        }
+    </div>
+</div>
+}

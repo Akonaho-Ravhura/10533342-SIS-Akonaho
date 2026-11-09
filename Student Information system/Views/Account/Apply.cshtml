@@ -1,0 +1,68 @@
+@model ApplyViewModel
+@{
+    ViewData["Title"] = "Apply online";
+    ViewData["Public"] = true;
+}
+<div class="container py-5" style="max-width:960px">
+    <div class="mb-4">
+        <h1 class="section-title h2 mb-1">Online application</h1>
+        <p class="text-muted">Complete the form below and upload a certified copy of your ID and your high school certificate (PDF, JPG or PNG, max 20 MB each).</p>
+    </div>
+    <form asp-action="Apply" method="post" enctype="multipart/form-data" novalidate>
+        <div asp-validation-summary="All" class="alert alert-danger small" style="display:@(ViewData.ModelState.IsValid ? "none" : "block")"></div>
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person"></i> 1. Personal details</div>
+            <div class="card-body row g-3">
+                <div class="col-md-6"><label asp-for="FirstName" class="form-label"></label><input asp-for="FirstName" class="form-control" /><span asp-validation-for="FirstName" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="LastName" class="form-label"></label><input asp-for="LastName" class="form-control" /><span asp-validation-for="LastName" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="IdNumber" class="form-label"></label><input asp-for="IdNumber" class="form-control" /><span asp-validation-for="IdNumber" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="DateOfBirth" class="form-label"></label><input asp-for="DateOfBirth" class="form-control" /><span asp-validation-for="DateOfBirth" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="Gender" class="form-label"></label>
+                    <select asp-for="Gender" class="form-select"><option value="">Select…</option><option>Female</option><option>Male</option><option>Other</option><option>Prefer not to say</option></select>
+                    <span asp-validation-for="Gender" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="Phone" class="form-label">Cell phone</label><input asp-for="Phone" class="form-control" /><span asp-validation-for="Phone" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="Email" class="form-label"></label><input asp-for="Email" class="form-control" /><span asp-validation-for="Email" class="text-danger small"></span></div>
+                <div class="col-12"><label asp-for="Address" class="form-label">Residential address</label><textarea asp-for="Address" class="form-control" rows="2"></textarea><span asp-validation-for="Address" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="NextOfKinName" class="form-label"></label><input asp-for="NextOfKinName" class="form-control" /><span asp-validation-for="NextOfKinName" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="NextOfKinPhone" class="form-label"></label><input asp-for="NextOfKinPhone" class="form-control" /><span asp-validation-for="NextOfKinPhone" class="text-danger small"></span></div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-mortarboard"></i> 2. Study details</div>
+            <div class="card-body row g-3">
+                <div class="col-md-12"><label asp-for="Programme" class="form-label">Programme applying for</label>
+                    <select asp-for="Programme" class="form-select" asp-items="@(new SelectList(Programmes.All.Where(p => p != "General")))"><option value="">Select…</option></select>
+                    <span asp-validation-for="Programme" class="text-danger small"></span></div>
+                <div class="col-md-8"><label asp-for="HighSchool" class="form-label"></label><input asp-for="HighSchool" class="form-control" /><span asp-validation-for="HighSchool" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="MatricYear" class="form-label"></label><input asp-for="MatricYear" class="form-control" type="number" /><span asp-validation-for="MatricYear" class="text-danger small"></span></div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-file-earmark-arrow-up"></i> 3. Supporting documents</div>
+            <div class="card-body row g-3">
+                <div class="col-md-6"><label asp-for="IdCopy" class="form-label"></label><input asp-for="IdCopy" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" /><span asp-validation-for="IdCopy" class="text-danger small"></span></div>
+                <div class="col-md-6"><label asp-for="MatricCertificate" class="form-label"></label><input asp-for="MatricCertificate" type="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" /><span asp-validation-for="MatricCertificate" class="text-danger small"></span></div>
+                <div class="col-12 small text-muted">You can upload additional documents (proof of address, proof of payment) from your portal after applying.</div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-shield-lock"></i> 4. Create your portal login</div>
+            <div class="card-body row g-3">
+                <div class="col-md-4"><label asp-for="Username" class="form-label"></label><input asp-for="Username" class="form-control" autocomplete="username" /><span asp-validation-for="Username" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="Password" class="form-label"></label><input asp-for="Password" class="form-control" autocomplete="new-password" /><span asp-validation-for="Password" class="text-danger small"></span></div>
+                <div class="col-md-4"><label asp-for="ConfirmPassword" class="form-label"></label><input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" /><span asp-validation-for="ConfirmPassword" class="text-danger small"></span></div>
+            </div>
+        </div>
+
+        <div class="form-check mb-4">
+            <input asp-for="AcceptTerms" class="form-check-input" />
+            <label asp-for="AcceptTerms" class="form-check-label">I declare that the information supplied is true and correct, and I consent to Horizon Private Training College processing my personal information for admission purposes (POPIA).</label>
+            <div><span asp-validation-for="AcceptTerms" class="text-danger small"></span></div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg px-5"><i class="bi bi-send"></i> Submit application</button>
+    </form>
+</div>

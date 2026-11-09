@@ -1,0 +1,137 @@
+﻿@using System.Security.Claims
+@{
+    var isPublic = ViewData["Public"] as bool? == true || User.Identity?.IsAuthenticated != true;
+    var role = User.FindFirstValue(ClaimTypes.Role);
+    var ctrl = ViewContext.RouteData.Values["controller"]?.ToString();
+    var act = ViewContext.RouteData.Values["action"]?.ToString();
+    string Active(string c, string? a = null) => ctrl == c && (a == null || act == a) ? "active" : "";
+    int unread = ViewBag.UnreadCount as int? ?? 0;
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · Horizon Private Training College</title>
+    <link rel="icon" href="~/img/logo.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="@(isPublic ? "public" : "portal")">
+@if (isPublic)
+{
+    <header class="pub-header">
+        <nav class="navbar navbar-expand-md navbar-dark">
+            <div class="container">
+                <a class="navbar-brand brand" asp-controller="Home" asp-action="Index">
+                    <img src="~/img/logo.svg" alt="" width="44" height="44" />
+                    <span><strong>Horizon</strong><small>Private Training College</small></span>
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#pubnav" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="pubnav">
+                    <ul class="navbar-nav ms-auto align-items-md-center gap-md-2">
+                        <li class="nav-item"><a class="nav-link" asp-controller="Home" asp-action="Index" asp-fragment="courses">Courses</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Account" asp-action="Apply">Apply online</a></li>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item"><a class="btn btn-light btn-sm px-3" asp-controller="Account" asp-action="Login">My portal</a></li>
+                        }
+                        else
+                        {
+                            <li class="nav-item"><a class="btn btn-light btn-sm px-3" asp-controller="Account" asp-action="Login"><i class="bi bi-box-arrow-in-right"></i> Portal login</a></li>
+                        }
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+    <main>
+        <partial name="_Flash" />
+        @RenderBody()
+    </main>
+    <footer class="pub-footer">
+        <div class="container d-flex flex-wrap justify-content-between gap-2">
+            <span>&copy; @DateTime.Now.Year Horizon Private Training College</span>
+            <span>Student Information System · Prototype</span>
+        </div>
+    </footer>
+}
+else
+{
+    <div class="shell">
+        <aside class="sidebar" id="sidebar">
+            <a class="brand side-brand" href="/">
+                <img src="~/img/logo.svg" alt="" width="40" height="40" />
+                <span><strong>Horizon</strong><small>Private Training College</small></span>
+            </a>
+            <div class="side-role">@role portal</div>
+            <nav class="side-nav">
+                @if (role == "Student")
+                {
+                    <a class="@Active("Student","Index")" asp-controller="Student" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    <a class="@Active("Student","Courses")" asp-controller="Student" asp-action="Courses"><i class="bi bi-journal-plus"></i> Course registration</a>
+                    <a class="@Active("Student","Materials")" asp-controller="Student" asp-action="Materials"><i class="bi bi-collection-play"></i> Course content</a>
+                    <a class="@Active("Student","Results")" asp-controller="Student" asp-action="Results"><i class="bi bi-bar-chart-line"></i> Results</a>
+                    <a class="@Active("Student","Documents")" asp-controller="Student" asp-action="Documents"><i class="bi bi-folder2-open"></i> My documents</a>
+                    <a class="@Active("Student","MyProfile")" asp-controller="Student" asp-action="MyProfile"><i class="bi bi-person-vcard"></i> My profile</a>
+                }
+                else if (role == "Lecturer")
+                {
+                    <a class="@Active("Lecturer","Index")" asp-controller="Lecturer" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    <a class="@Active("Lecturer","Marks")" asp-controller="Lecturer" asp-action="Marks"><i class="bi bi-pencil-square"></i> Capture marks</a>
+                    <a class="@Active("Lecturer","Materials")" asp-controller="Lecturer" asp-action="Materials"><i class="bi bi-cloud-upload"></i> Course content</a>
+                }
+                else
+                {
+                    <a class="@Active("Management","Index")" asp-controller="Management" asp-action="Index"><i class="bi bi-speedometer2"></i> Dashboard</a>
+                    <a class="@(ctrl=="Management" && (act=="Students"||act=="Student") ? "active" : "")" asp-controller="Management" asp-action="Students"><i class="bi bi-people"></i> Student records</a>
+                    <a class="@Active("Management","Documents")" asp-controller="Management" asp-action="Documents"><i class="bi bi-file-earmark-person"></i> Documents</a>
+                    <a class="@Active("Management","Registrations")" asp-controller="Management" asp-action="Registrations"><i class="bi bi-journal-check"></i> Registrations</a>
+                    <a class="@Active("Management","Courses")" asp-controller="Management" asp-action="Courses"><i class="bi bi-book"></i> Courses</a>
+                    <a class="@Active("Management","Staff")" asp-controller="Management" asp-action="Staff"><i class="bi bi-person-badge"></i> Staff</a>
+                    <a class="@Active("Management","Reports")" asp-controller="Management" asp-action="Reports"><i class="bi bi-graph-up"></i> Reports</a>
+                }
+                <div class="side-sep"></div>
+                <a class="@(ctrl=="Messages" ? "active" : "")" asp-controller="Messages" asp-action="Index"><i class="bi bi-megaphone"></i> Communications @if (unread > 0) { <span class="badge rounded-pill bg-warning text-dark ms-auto">@unread</span> }</a>
+                @if (role != "Student")
+                {
+                    <a class="@(ctrl=="Messages" && act=="Compose" ? "active" : "")" asp-controller="Messages" asp-action="Compose"><i class="bi bi-send"></i> Send message</a>
+                }
+                <a class="@Active("Account","Password")" asp-controller="Account" asp-action="Password"><i class="bi bi-shield-lock"></i> Change password</a>
+            </nav>
+        </aside>
+        <div class="main">
+            <header class="topbar">
+                <button class="btn btn-link d-lg-none p-0 me-2" type="button" onclick="document.getElementById('sidebar').classList.toggle('open')" aria-label="Menu"><i class="bi bi-list fs-3"></i></button>
+                <div class="fw-semibold text-primary-emphasis d-none d-sm-block">Student Information System</div>
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    <a asp-controller="Messages" asp-action="Index" class="position-relative text-body" title="Communications">
+                        <i class="bi bi-bell fs-5"></i>
+                        @if (unread > 0) { <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@unread</span> }
+                    </a>
+                    <div class="text-end lh-sm d-none d-sm-block">
+                        <div class="fw-semibold">@User.Identity?.Name</div>
+                        <small class="text-muted">@role</small>
+                    </div>
+                    <div class="avatar">@string.Concat((User.Identity?.Name ?? "?").Split(' ', StringSplitOptions.RemoveEmptyEntries).Where(w => char.IsLetter(w[0])).Take(2).Select(w => w[0]))</div>
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="m-0">
+                        <button class="btn btn-outline-primary btn-sm" type="submit"><i class="bi bi-box-arrow-right"></i> <span class="d-none d-md-inline">Sign out</span></button>
+                    </form>
+                </div>
+            </header>
+            <main class="content">
+                <partial name="_Flash" />
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+}
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

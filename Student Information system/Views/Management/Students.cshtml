@@ -1,0 +1,47 @@
+@model List<StudentProfile>
+@{
+    ViewData["Title"] = "Student records";
+    var store = (DataStore)ViewBag.Store;
+}
+<div class="page-head"><div><h1>Student records</h1><p>Search by name, student number, ID number or email.</p></div></div>
+<form method="get" class="card card-body mb-3">
+    <div class="row g-2">
+        <div class="col-md-5"><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input name="q" value="@ViewBag.Q" class="form-control" placeholder="Search students…" /></div></div>
+        <div class="col-md-3">
+            <select name="status" class="form-select"><option value="">All statuses</option>
+                @foreach (var s in Enum.GetNames<StudentStatus>()) { <option selected="@(s == (string?)ViewBag.Status)">@s</option> }
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="programme" class="form-select"><option value="">All programmes</option>
+                @foreach (var p in Programmes.All) { <option selected="@(p == (string?)ViewBag.Programme)">@p</option> }
+            </select>
+        </div>
+        <div class="col-md-1"><button class="btn btn-primary w-100">Go</button></div>
+    </div>
+</form>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Student no.</th><th>Name</th><th>ID number</th><th>Programme</th><th class="text-center">Courses</th><th class="text-center">Docs</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var s in Model)
+            {
+                var docs = store.Data.Documents.Where(x => x.StudentId == s.UserId).ToList();
+                var hasCore = docs.Any(x => x.Type == DocumentTypes.IdCopy) && docs.Any(x => x.Type == DocumentTypes.MatricCertificate);
+                <tr>
+                    <td class="fw-semibold">@s.StudentNumber</td>
+                    <td>@s.FullName<div class="small text-muted">@s.Email</div></td>
+                    <td>@s.IdNumber</td>
+                    <td class="small">@s.Programme</td>
+                    <td class="text-center">@store.Data.Enrollments.Count(e => e.StudentId == s.UserId && e.Status == EnrollmentStatus.Approved)</td>
+                    <td class="text-center">@docs.Count @if (!hasCore) { <i class="bi bi-exclamation-triangle-fill text-warning" title="Missing ID or certificate"></i> }</td>
+                    <td><span class="status status-@s.Status">@s.Status</span></td>
+                    <td class="text-end"><a asp-action="Student" asp-route-id="@s.UserId" class="btn btn-sm btn-outline-primary">Open record</a></td>
+                </tr>
+            }
+            @if (Model.Count == 0) { <tr><td colspan="8" class="text-muted text-center py-4">No students match your search.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

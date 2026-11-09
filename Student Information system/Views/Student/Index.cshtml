@@ -1,0 +1,122 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var store = (DataStore)ViewBag.Store;
+    var p = (StudentProfile)ViewBag.Profile;
+    var enrollments = (List<Enrollment>)ViewBag.Enrollments;
+    var approved = enrollments.Where(e => e.Status == EnrollmentStatus.Approved).ToList();
+    var pending = enrollments.Count(e => e.Status == EnrollmentStatus.Pending);
+    var messages = (List<Message>)ViewBag.Messages;
+    var docs = (List<StudentDocument>)ViewBag.Documents;
+    var due = (List<CourseMaterial>)ViewBag.Due;
+    var finals = approved.Where(e => e.FinalMark.HasValue).Select(e => e.FinalMark!.Value).ToList();
+    var credits = approved.Sum(e => store.Course(e.CourseCode)?.Credits ?? 0);
+    var hasId = docs.Any(d => d.Type == DocumentTypes.IdCopy);
+    var hasMatric = docs.Any(d => d.Type == DocumentTypes.MatricCertificate);
+}
+<div class="card welcome mb-4">
+    <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <div class="text-muted small">Welcome back</div>
+            <h1 class="h3 fw-bold mb-1">@p.FirstName @p.LastName</h1>
+            <div>@p.StudentNumber · @p.Programme</div>
+        </div>
+        <span class="status status-@p.Status fs-6">@(p.Status == StudentStatus.Applicant ? "Application under review" : p.Status.ToString())</span>
+    </div>
+</div>
+
+@if (p.Status == StudentStatus.Applicant)
+{
+    <div class="alert alert-info d-flex gap-3 align-items-start">
+        <i class="bi bi-hourglass-split fs-4"></i>
+        <div><strong>Your application is being reviewed.</strong> The Registrar's Office is checking your documents. You'll receive a message here once you're approved, and then you can register for courses.</div>
+    </div>
+}
+@if (!hasId || !hasMatric)
+{
+    <div class="alert alert-warning d-flex gap-3 align-items-center">
+        <i class="bi bi-exclamation-triangle fs-4"></i>
+        <div class="flex-grow-1">Your record is missing: @string.Join(" and ", new[] { hasId ? null : "a copy of your ID", hasMatric ? null : "your high school certificate" }.Where(x => x != null)).</div>
+        <a asp-action="Documents" class="btn btn-warning btn-sm">Upload now</a>
+    </div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-sm-6 col-xl-3"><div class="card stat"><div class="icon"><i class="bi bi-journal-bookmark"></i></div><div><div class="val">@approved.Count</div><div class="lbl">Registered courses</div></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat"><div class="icon"><i class="bi bi-hourglass"></i></div><div><div class="val">@pending</div><div class="lbl">Pending approval</div></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat"><div class="icon"><i class="bi bi-award"></i></div><div><div class="val">@credits</div><div class="lbl">Credits this semester</div></div></div></div>
+    <div class="col-sm-6 col-xl-3"><div class="card stat"><div class="icon"><i class="bi bi-graph-up-arrow"></i></div><div><div class="val">@(finals.Count > 0 ? finals.Average().ToString("0.0") + "%" : "—")</div><div class="lbl">Current average</div></div></div></div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-7">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between"><span><i class="bi bi-bar-chart-line"></i> My courses</span><a asp-action="Results" class="small">View results</a></div>
+            @if (approved.Count == 0)
+            {
+                <div class="card-body text-muted">You are not registered for any approved courses yet. <a asp-action="Courses">Register now</a>.</div>
+            }
+            else
+            {
+                <div class="list-group list-group-flush">
+                    @foreach (var e in approved)
+                    {
+                        var c = store.Course(e.CourseCode);
+                        var done = e.Assessments.Where(a => a.Mark.HasValue).Sum(a => a.Weight);
+                        <a asp-action="Materials" asp-route-id="@e.CourseCode" class="list-group-item list-group-item-action py-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div><span class="badge badge-soft me-2">@e.CourseCode</span><span class="fw-semibold">@c?.Name</span></div>
+                                <span class="fw-bold text-navy">@(e.FinalMark?.ToString("0.0") ?? "—")@(e.FinalMark.HasValue ? "%" : "")</span>
+                            </div>
+                            <div class="progress" title="@done% of assessments marked"><div class="progress-bar" style="width:@done%"></div></div>
+                            <div class="small text-muted mt-1">@done% of assessments marked · @store.UserName(c?.LecturerId)</div>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-calendar-event"></i> Upcoming deadlines</div>
+            @if (due.Count == 0) { <div class="card-body text-muted">No upcoming deadlines.</div> }
+            else
+            {
+                <ul class="list-group list-group-flush">
+                    @foreach (var m in due)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div><span class="badge badge-soft me-2">@m.CourseCode</span>@m.Title</div>
+                            <span class="small fw-semibold @((m.DueDate!.Value - DateTime.Today).TotalDays <= 3 ? "text-danger" : "text-muted")">Due @m.DueDate.Value.ToString("ddd d MMM")</span>
+                        </li>
+                    }
+                </ul>
+            }
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between"><span><i class="bi bi-megaphone"></i> Latest communications</span><a asp-controller="Messages" asp-action="Index" class="small">All</a></div>
+            @if (messages.Count == 0) { <div class="card-body text-muted">No messages.</div> }
+            @foreach (var m in messages)
+            {
+                <a asp-controller="Messages" asp-action="Read" asp-route-id="@m.Id" class="msg-item prio-@m.Priority @(m.ReadBy.Contains(p.UserId) ? "" : "unread")">
+                    <div class="d-flex justify-content-between"><span class="subj">@m.Subject</span><small class="text-muted text-nowrap ms-2">@Ago(m.SentAt)</small></div>
+                    <div class="snippet">@m.Body</div>
+                </a>
+            }
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-folder2-open"></i> Document checklist</div>
+            <ul class="list-group list-group-flush">
+                @foreach (var t in new[] { DocumentTypes.IdCopy, DocumentTypes.MatricCertificate, DocumentTypes.ProofOfAddress })
+                {
+                    var d = docs.FirstOrDefault(x => x.Type == t);
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <span>@t</span>
+                        @if (d == null) { <span class="status status-Pending">Missing</span> }
+                        else if (d.Verified) { <span class="status status-Approved"><i class="bi bi-patch-check"></i> Verified</span> }
+                        else { <span class="status status-Graduated">Uploaded</span> }
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+</div>

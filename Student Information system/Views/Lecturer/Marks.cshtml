@@ -1,0 +1,55 @@
+@model List<Enrollment>
+@{
+    ViewData["Title"] = "Capture marks";
+    var store = (DataStore)ViewBag.Store;
+    var courses = (List<Course>)ViewBag.Courses;
+    var current = ViewBag.Current as Course;
+    var headers = Model.FirstOrDefault()?.Assessments ?? Enrollment.DefaultAssessments();
+}
+<div class="page-head"><div><h1>Capture marks</h1><p>Enter marks out of 100. Leave a cell blank if not yet assessed. Weighted marks update when you save.</p></div></div>
+<ul class="nav nav-pills mb-3 gap-1 flex-wrap">
+    @foreach (var c in courses) { <li class="nav-item"><a class="nav-link @(c.Code == current?.Code ? "active" : "")" asp-action="Marks" asp-route-id="@c.Code">@c.Code</a></li> }
+</ul>
+@if (current == null) { <div class="card card-body text-muted">You have no courses assigned.</div> }
+else
+{
+    <form method="post" asp-action="Marks" asp-route-id="@current.Code">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <span>@current.Code – @current.Name · @Model.Count students</span>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="form-check m-0 small fw-normal text-body"><input class="form-check-input" type="checkbox" name="notify" id="notify" checked /><label class="form-check-label" for="notify">Notify class</label></div>
+                    <button class="btn btn-primary btn-sm px-3"><i class="bi bi-save"></i> Save marks</button>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Student</th>
+                            @foreach (var h in headers) { <th class="text-center">@h.Name<br /><span class="fw-normal text-muted">@h.Weight%</span></th> }
+                            <th class="text-center">Weighted</th>
+                            <th>Comment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var e in Model)
+                    {
+                        var s = store.Student(e.StudentId);
+                        <tr>
+                            <td class="text-nowrap"><div class="fw-semibold">@s?.FullName</div><div class="small text-muted">@s?.StudentNumber</div></td>
+                            @for (var i = 0; i < e.Assessments.Count; i++)
+                            {
+                                <td class="text-center"><input name="m_@(e.Id)_@i" value="@e.Assessments[i].Mark?.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)" class="form-control form-control-sm marks-input mx-auto" inputmode="decimal" type="number" min="0" max="100" step="0.5" /></td>
+                            }
+                            <td class="text-center fw-bold @(e.FinalMark < 50 ? "text-danger" : "text-navy")">@(e.FinalMark?.ToString("0.0") ?? "—")</td>
+                            <td style="min-width:180px"><input name="c_@e.Id" value="@e.LecturerComment" class="form-control form-control-sm" placeholder="Optional feedback" /></td>
+                        </tr>
+                    }
+                    @if (Model.Count == 0) { <tr><td colspan="@(headers.Count + 3)" class="text-muted">No approved students in this course yet.</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </form>
+}

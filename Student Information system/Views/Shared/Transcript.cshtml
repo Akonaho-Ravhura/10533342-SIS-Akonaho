@@ -1,0 +1,41 @@
+@model List<Enrollment>
+@{
+    ViewData["Title"] = "Academic record";
+    var p = (StudentProfile)ViewBag.Profile;
+    var store = (DataStore)ViewBag.Store;
+    var finals = Model.Where(e => e.FinalMark.HasValue).Select(e => e.FinalMark!.Value).ToList();
+}
+<div class="d-flex justify-content-end gap-2 mb-3 no-print">
+    <button class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer"></i> Print / Save as PDF</button>
+</div>
+<div class="transcript">
+    <div class="transcript-head d-flex align-items-center gap-3">
+        <img src="~/img/logo.svg" width="64" height="64" alt="" />
+        <div>
+            <div class="h4 fw-bold text-navy m-0">Horizon Private Training College</div>
+            <div class="text-muted">Statement of Academic Record · Issued @DateTime.Now.ToString("d MMMM yyyy")</div>
+        </div>
+    </div>
+    <dl class="dl-grid mb-4">
+        <dt>Student</dt><dd class="fw-semibold">@p.FullName</dd>
+        <dt>Student number</dt><dd>@p.StudentNumber</dd>
+        <dt>ID / Passport</dt><dd>@p.IdNumber</dd>
+        <dt>Programme</dt><dd>@p.Programme</dd>
+        <dt>Status</dt><dd>@p.Status</dd>
+    </dl>
+    <table class="table table-bordered">
+        <thead><tr><th>Code</th><th>Course</th><th>Semester</th><th class="text-center">Credits</th><th class="text-center">Mark</th><th>Result</th></tr></thead>
+        <tbody>
+        @foreach (var e in Model.OrderBy(e => e.CourseCode))
+        {
+            var c = store.Course(e.CourseCode);
+            <tr><td>@e.CourseCode</td><td>@c?.Name</td><td>@c?.Semester</td><td class="text-center">@c?.Credits</td><td class="text-center">@(e.FinalMark?.ToString("0.0") ?? "—")</td><td>@e.Result</td></tr>
+        }
+        @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted">No registered courses.</td></tr> }
+        </tbody>
+    </table>
+    <div class="d-flex justify-content-between mt-3 small">
+        <span>Average: <strong>@(finals.Count > 0 ? finals.Average().ToString("0.0") + "%" : "—")</strong></span>
+        <span class="text-muted">Unofficial record – not valid without the Registrar's stamp.</span>
+    </div>
+</div>

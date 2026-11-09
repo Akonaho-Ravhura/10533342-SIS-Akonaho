@@ -1,0 +1,110 @@
+@model StudentProfile
+@{
+    ViewData["Title"] = Model.FullName;
+    var store = (DataStore)ViewBag.Store;
+    var enr = (List<Enrollment>)ViewBag.Enrollments;
+    var docs = (List<StudentDocument>)ViewBag.Documents;
+    var account = (AppUser?)ViewBag.Account;
+}
+<a asp-action="Students" class="btn btn-link px-0 mb-2"><i class="bi bi-arrow-left"></i> All students</a>
+<div class="page-head">
+    <div class="d-flex align-items-center gap-3">
+        <div class="avatar" style="width:56px;height:56px;font-size:1.2rem">@Model.FirstName[0]@Model.LastName[0]</div>
+        <div><h1>@Model.FullName</h1><p>@Model.StudentNumber · @Model.Programme · <span class="status status-@Model.Status">@Model.Status</span></p></div>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Model.Status == StudentStatus.Applicant)
+        {
+            <form asp-action="SetStatus" method="post"><input type="hidden" name="id" value="@Model.UserId" /><input type="hidden" name="status" value="Active" /><button class="btn btn-success"><i class="bi bi-check-circle"></i> Approve application</button></form>
+            <form asp-action="SetStatus" method="post" onsubmit="return confirm('Reject this application?')"><input type="hidden" name="id" value="@Model.UserId" /><input type="hidden" name="status" value="Rejected" /><button class="btn btn-outline-danger">Reject</button></form>
+        }
+        else
+        {
+            <form asp-action="SetStatus" method="post" class="d-flex gap-2">
+                <input type="hidden" name="id" value="@Model.UserId" />
+                <select name="status" class="form-select form-select-sm" style="width:auto">@foreach (var s in Enum.GetNames<StudentStatus>()) { <option selected="@(s == Model.Status.ToString())">@s</option> }</select>
+                <button class="btn btn-sm btn-outline-primary">Update status</button>
+            </form>
+        }
+        <a asp-action="Transcript" asp-route-id="@Model.UserId" class="btn btn-sm btn-outline-primary d-flex align-items-center"><i class="bi bi-printer me-1"></i> Academic record</a>
+        <a asp-controller="Messages" asp-action="Compose" asp-route-to="@(Audiences.UserPrefix + Model.UserId)" class="btn btn-sm btn-outline-primary d-flex align-items-center"><i class="bi bi-send me-1"></i> Message</a>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-xl-5">
+        <div class="card mb-4">
+            <div class="card-header"><i class="bi bi-person-vcard"></i> Personal information</div>
+            <div class="card-body">
+                <dl class="dl-grid">
+                    <dt>ID / Passport</dt><dd class="fw-semibold">@Model.IdNumber</dd>
+                    <dt>Date of birth</dt><dd>@Model.DateOfBirth?.ToString("d MMMM yyyy")</dd>
+                    <dt>Gender</dt><dd>@Model.Gender</dd>
+                    <dt>Phone</dt><dd>@Model.Phone</dd>
+                    <dt>Email</dt><dd>@Model.Email</dd>
+                    <dt>Address</dt><dd>@Model.Address</dd>
+                    <dt>High school</dt><dd>@Model.HighSchool (@Model.MatricYear)</dd>
+                    <dt>Next of kin</dt><dd>@Model.NextOfKinName · @Model.NextOfKinPhone</dd>
+                    <dt>Registered</dt><dd>@Model.RegisteredAt.ToString("d MMMM yyyy")</dd>
+                    <dt>Portal username</dt><dd>@account?.Username @if (account?.Active == false) { <span class="status status-Suspended ms-1">login disabled</span> }</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-7">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-folder2-open"></i> Documents on file</span>
+                <button class="btn btn-sm btn-outline-primary" type="button" data-bs-toggle="collapse" data-bs-target="#addDoc"><i class="bi bi-plus"></i> Add</button>
+            </div>
+            <div class="collapse border-bottom" id="addDoc">
+                <form asp-action="UploadDocument" method="post" enctype="multipart/form-data" class="p-3 row g-2">
+                    <input type="hidden" name="id" value="@Model.UserId" />
+                    <div class="col-md-5"><select name="type" class="form-select form-select-sm">@foreach (var t in DocumentTypes.All) { <option>@t</option> }</select></div>
+                    <div class="col-md-5"><input type="file" name="file" class="form-control form-control-sm" accept=".pdf,.jpg,.jpeg,.png" required /></div>
+                    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100">Upload</button></div>
+                </form>
+            </div>
+            @if (docs.Count == 0) { <div class="card-body text-muted">No documents uploaded.</div> }
+            <ul class="list-group list-group-flush">
+            @foreach (var x in docs)
+            {
+                <li class="list-group-item d-flex align-items-center gap-3 flex-wrap">
+                    <div class="doc-thumb"><i class="bi bi-file-earmark-@(x.ContentType.Contains("pdf") ? "pdf" : "image")"></i></div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold">@x.Type</div>
+                        <div class="small text-muted text-truncate">@x.FileName · @FileSize(x.Size) · @x.UploadedAt.ToString("d MMM yyyy")@(x.Verified ? $" · verified by {x.VerifiedBy}" : "")</div>
+                    </div>
+                    <a class="btn btn-sm btn-outline-primary" asp-controller="Files" asp-action="Document" asp-route-id="@x.Id" target="_blank" title="View"><i class="bi bi-eye"></i></a>
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Files" asp-action="Document" asp-route-id="@x.Id" asp-route-download="true" title="Download"><i class="bi bi-download"></i></a>
+                    <form asp-action="VerifyDocument" method="post">
+                        <input type="hidden" name="docId" value="@x.Id" /><input type="hidden" name="verified" value="@((!x.Verified).ToString().ToLower())" />
+                        @if (x.Verified) { <button class="btn btn-sm btn-success" title="Click to un-verify"><i class="bi bi-patch-check"></i> Verified</button> }
+                        else { <button class="btn btn-sm btn-outline-success">Verify</button> }
+                    </form>
+                </li>
+            }
+            </ul>
+        </div>
+        <div class="card">
+            <div class="card-header"><i class="bi bi-mortarboard"></i> Courses &amp; marks</div>
+            <div class="table-responsive">
+                <table class="table">
+                    <thead><tr><th>Course</th><th>Status</th>@foreach (var a in Enrollment.DefaultAssessments()) { <th class="text-center">@a.Name</th> }<th class="text-center">Final</th></tr></thead>
+                    <tbody>
+                    @foreach (var e in enr)
+                    {
+                        <tr>
+                            <td><span class="badge badge-soft">@e.CourseCode</span><div class="small text-muted">@store.Course(e.CourseCode)?.Name</div></td>
+                            <td><span class="status status-@e.Status">@e.Status</span></td>
+                            @foreach (var a in e.Assessments) { <td class="text-center">@(a.Mark?.ToString("0.#") ?? "—")</td> }
+                            <td class="text-center fw-bold">@(e.FinalMark?.ToString("0.0") ?? "—")</td>
+                        </tr>
+                    }
+                    @if (enr.Count == 0) { <tr><td colspan="7" class="text-muted">No course registrations.</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

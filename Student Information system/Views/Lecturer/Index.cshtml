@@ -1,0 +1,65 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Lecturer dashboard";
+    var store = (DataStore)ViewBag.Store;
+    var me = (AppUser)ViewBag.Me;
+    var enr = (List<Enrollment>)ViewBag.Enrollments;
+    var messages = (List<Message>)ViewBag.Messages;
+    var toMark = enr.Sum(e => e.Assessments.Count(a => !a.Mark.HasValue));
+}
+<div class="card welcome mb-4">
+    <div class="card-body p-4">
+        <div class="text-muted small">Lecturer portal</div>
+        <h1 class="h3 fw-bold mb-1">Welcome, @me.FullName</h1>
+        <div>@me.Department</div>
+    </div>
+</div>
+<div class="row g-3 mb-4">
+    <div class="col-sm-4"><div class="card stat"><div class="icon"><i class="bi bi-book"></i></div><div><div class="val">@Model.Count</div><div class="lbl">Courses I teach</div></div></div></div>
+    <div class="col-sm-4"><div class="card stat"><div class="icon"><i class="bi bi-people"></i></div><div><div class="val">@enr.Select(e => e.StudentId).Distinct().Count()</div><div class="lbl">Students</div></div></div></div>
+    <div class="col-sm-4"><div class="card stat"><div class="icon"><i class="bi bi-pencil"></i></div><div><div class="val">@toMark</div><div class="lbl">Marks outstanding</div></div></div></div>
+</div>
+<div class="row g-4">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-book"></i> My courses</div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead><tr><th>Course</th><th class="text-center">Students</th><th class="text-center">Class average</th><th class="text-center">Content</th><th></th></tr></thead>
+                    <tbody>
+                    @foreach (var c in Model)
+                    {
+                        var ce = enr.Where(e => e.CourseCode == c.Code).ToList();
+                        var finals = ce.Where(e => e.FinalMark.HasValue).Select(e => e.FinalMark!.Value).ToList();
+                        <tr>
+                            <td><span class="badge badge-soft me-2">@c.Code</span>@c.Name</td>
+                            <td class="text-center">@ce.Count</td>
+                            <td class="text-center">@(finals.Count > 0 ? finals.Average().ToString("0.0") + "%" : "—")</td>
+                            <td class="text-center">@store.Data.Materials.Count(m => m.CourseCode == c.Code)</td>
+                            <td class="text-end text-nowrap">
+                                <a asp-action="Marks" asp-route-id="@c.Code" class="btn btn-sm btn-primary">Marks</a>
+                                <a asp-action="Materials" asp-route-id="@c.Code" class="btn btn-sm btn-outline-primary">Content</a>
+                                <a asp-controller="Messages" asp-action="Compose" asp-route-to="@(Audiences.CoursePrefix + c.Code)" class="btn btn-sm btn-outline-secondary" title="Message class"><i class="bi bi-send"></i></a>
+                            </td>
+                        </tr>
+                    }
+                    @if (Model.Count == 0) { <tr><td colspan="5" class="text-muted">No courses assigned yet.</td></tr> }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between"><span><i class="bi bi-megaphone"></i> Notices</span><a asp-controller="Messages" asp-action="Index" class="small">All</a></div>
+            @if (messages.Count == 0) { <div class="card-body text-muted">No messages.</div> }
+            @foreach (var m in messages)
+            {
+                <a asp-controller="Messages" asp-action="Read" asp-route-id="@m.Id" class="msg-item prio-@m.Priority @(m.ReadBy.Contains(me.Id) ? "" : "unread")">
+                    <div class="d-flex justify-content-between"><span class="subj">@m.Subject</span><small class="text-muted ms-2 text-nowrap">@Ago(m.SentAt)</small></div>
+                    <div class="snippet">@m.Body</div>
+                </a>
+            }
+        </div>
+    </div>
+</div>

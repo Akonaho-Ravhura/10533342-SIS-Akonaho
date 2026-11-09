@@ -1,0 +1,60 @@
+@model List<Course>
+@{
+    ViewData["Title"] = "Courses";
+    var store = (DataStore)ViewBag.Store;
+    var lecturers = (List<AppUser>)ViewBag.Lecturers;
+}
+<div class="page-head">
+    <div><h1>Courses</h1><p>Create courses, assign lecturers and open or close registration.</p></div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#course-new"><i class="bi bi-plus-lg"></i> New course</button>
+</div>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Code</th><th>Name</th><th>Programme</th><th>Lecturer</th><th class="text-center">Credits</th><th class="text-center">Enrolled</th><th>Fee</th><th>Registration</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var c in Model)
+            {
+                <tr>
+                    <td><span class="badge badge-soft">@c.Code</span></td>
+                    <td class="fw-semibold">@c.Name</td>
+                    <td class="small">@c.Programme</td>
+                    <td>@(c.LecturerId == null ? Html.Raw("<span class='text-danger small'>Unassigned</span>") : store.UserName(c.LecturerId))</td>
+                    <td class="text-center">@c.Credits</td>
+                    <td class="text-center">@store.Data.Enrollments.Count(e => e.CourseCode == c.Code && e.Status == EnrollmentStatus.Approved) / @c.Capacity</td>
+                    <td>R @c.Fee.ToString("N0")</td>
+                    <td>@if (c.OpenForRegistration) { <span class="status status-Active">Open</span> } else { <span class="status status-Rejected">Closed</span> }</td>
+                    <td class="text-end"><button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#course-@c.Code">Edit</button></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@foreach (var c in Model.Append(null))
+{
+    var id = c == null ? "new" : c.Code;
+    var x = c ?? new Course();
+    <div class="modal fade" id="course-@id" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form asp-action="SaveCourse" method="post" class="modal-content">
+                <div class="modal-header"><h5 class="modal-title text-navy fw-bold">@(c == null ? "New course" : $"Edit {c.Code}")</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body row g-3">
+                    @if (c != null) { <input type="hidden" name="originalCode" value="@c.Code" /> }
+                    <div class="col-md-3"><label class="form-label">Code</label><input name="Code" value="@x.Code" class="form-control" required @(c != null ? "readonly" : "") /></div>
+                    <div class="col-md-9"><label class="form-label">Name</label><input name="Name" value="@x.Name" class="form-control" required /></div>
+                    <div class="col-12"><label class="form-label">Description</label><textarea name="Description" class="form-control" rows="2">@x.Description</textarea></div>
+                    <div class="col-md-6"><label class="form-label">Programme</label><select name="Programme" class="form-select">@foreach (var p in Programmes.All) { <option selected="@(p == x.Programme)">@p</option> }</select></div>
+                    <div class="col-md-6"><label class="form-label">Lecturer</label><select name="LecturerId" class="form-select"><option value="">Unassigned</option>@foreach (var l in lecturers) { <option value="@l.Id" selected="@(l.Id == x.LecturerId)">@l.FullName</option> }</select></div>
+                    <div class="col-md-3"><label class="form-label">Credits</label><input name="Credits" type="number" value="@x.Credits" class="form-control" min="0" /></div>
+                    <div class="col-md-3"><label class="form-label">Capacity</label><input name="Capacity" type="number" value="@x.Capacity" class="form-control" min="1" /></div>
+                    <div class="col-md-3"><label class="form-label">Fee (R)</label><input name="Fee" type="number" value="@x.Fee.ToString(System.Globalization.CultureInfo.InvariantCulture)" class="form-control" min="0" step="50" /></div>
+                    <div class="col-md-3"><label class="form-label">Semester</label><input name="Semester" value="@x.Semester" class="form-control" /></div>
+                    <div class="col-12"><div class="form-check form-switch"><input class="form-check-input" type="checkbox" name="OpenForRegistration" value="true" id="open-@id" @(x.OpenForRegistration ? "checked" : "") /><input type="hidden" name="OpenForRegistration" value="false" /><label class="form-check-label" for="open-@id">Open for online registration</label></div></div>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button><button class="btn btn-primary">Save course</button></div>
+            </form>
+        </div>
+    </div>
+}

@@ -1,0 +1,23 @@
+@model Message
+@{
+    ViewData["Title"] = Model.Subject;
+    var store = (DataStore)ViewBag.Store;
+    var me = (AppUser)ViewBag.Me;
+    var sender = store.User(Model.SenderId);
+}
+<a asp-action="Index" class="btn btn-link px-0 mb-2"><i class="bi bi-arrow-left"></i> Back to communications</a>
+<div class="card prio-@Model.Priority" style="max-width:860px">
+    <div class="card-body p-4">
+        @if (Model.Priority != "Normal") { <span class="badge @(Model.Priority == "Urgent" ? "bg-danger" : "bg-warning text-dark") mb-2">@Model.Priority</span> }
+        <h1 class="h4 fw-bold text-navy">@Model.Subject</h1>
+        <div class="d-flex align-items-center gap-2 mb-4 small text-muted">
+            <div class="avatar" style="width:32px;height:32px;font-size:.75rem">@string.Concat((sender?.FullName ?? "?").Split(' ').Where(w => w.Length > 0 && char.IsLetter(w[0])).Take(2).Select(w => w[0]))</div>
+            <div><strong class="text-body">@sender?.FullName</strong> (@sender?.Role) → @store.AudienceLabel(Model.Audience)<br />@Model.SentAt.ToString("dddd d MMMM yyyy, HH:mm")</div>
+        </div>
+        <div style="white-space:pre-wrap">@Model.Body</div>
+        @if (me.Role != Roles.Student && sender != null && sender.Id != me.Id)
+        {
+            <a asp-action="Compose" asp-route-to="@(Audiences.UserPrefix + sender.Id)" class="btn btn-outline-primary btn-sm mt-4"><i class="bi bi-reply"></i> Reply</a>
+        }
+    </div>
+</div>

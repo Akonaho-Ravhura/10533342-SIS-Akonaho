@@ -1,0 +1,50 @@
+@model List<Enrollment>
+@{
+    ViewData["Title"] = "Course registrations";
+    var store = (DataStore)ViewBag.Store;
+    var status = (EnrollmentStatus)ViewBag.Status;
+}
+<div class="page-head"><div><h1>Course registrations</h1><p>Approve or reject students' online course registrations.</p></div></div>
+<ul class="nav nav-pills mb-3">
+    @foreach (var s in Enum.GetValues<EnrollmentStatus>())
+    {
+        <li class="nav-item"><a class="nav-link @(s == status ? "active" : "")" asp-action="Registrations" asp-route-status="@s">@s <span class="badge bg-light text-dark ms-1">@store.Data.Enrollments.Count(e => e.Status == s)</span></a></li>
+    }
+</ul>
+<form asp-action="DecideRegistration" method="post">
+    <div class="card">
+        @if (status == EnrollmentStatus.Pending && Model.Count > 0)
+        {
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div class="form-check m-0"><input class="form-check-input" type="checkbox" id="all" onclick="document.querySelectorAll('.pick').forEach(c => c.checked = this.checked)" /><label for="all" class="form-check-label">Select all</label></div>
+                <div class="d-flex gap-2">
+                    <button name="approve" value="true" class="btn btn-sm btn-success"><i class="bi bi-check-lg"></i> Approve selected</button>
+                    <button name="approve" value="false" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i> Reject selected</button>
+                </div>
+            </div>
+        }
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead><tr>@if (status == EnrollmentStatus.Pending) { <th></th> }<th>Student</th><th>Course</th><th>Programme match</th><th class="text-center">Seats</th><th>Requested</th><th>Status</th></tr></thead>
+                <tbody>
+                @foreach (var e in Model)
+                {
+                    var s = store.Student(e.StudentId);
+                    var c = store.Course(e.CourseCode);
+                    var taken = store.Data.Enrollments.Count(x => x.CourseCode == e.CourseCode && x.Status == EnrollmentStatus.Approved);
+                    <tr>
+                        @if (status == EnrollmentStatus.Pending) { <td><input type="checkbox" class="form-check-input pick" name="ids" value="@e.Id" /></td> }
+                        <td><a asp-action="Student" asp-route-id="@e.StudentId" class="fw-semibold">@s?.FullName</a><div class="small text-muted">@s?.StudentNumber</div></td>
+                        <td><span class="badge badge-soft me-1">@e.CourseCode</span>@c?.Name</td>
+                        <td>@if (c?.Programme == s?.Programme || c?.Programme == "General") { <i class="bi bi-check-circle text-success"></i> } else { <span class="small text-warning"><i class="bi bi-exclamation-circle"></i> Elective</span> }</td>
+                        <td class="text-center">@taken / @c?.Capacity</td>
+                        <td class="small">@e.RequestedAt.ToString("d MMM yyyy HH:mm")</td>
+                        <td><span class="status status-@e.Status">@e.Status</span></td>
+                    </tr>
+                }
+                @if (Model.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-4">No @status.ToString().ToLower() registrations.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</form>

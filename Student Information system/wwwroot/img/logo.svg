@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Horizon Private Training College">
+  <circle cx="32" cy="32" r="31" fill="#ffffff" stroke="#0b3d91" stroke-width="2"/>
+  <path d="M14 38a18 18 0 0 1 36 0z" fill="#1e6fd9"/>
+  <g stroke="#1e6fd9" stroke-width="2.5" stroke-linecap="round">
+    <line x1="32" y1="9" x2="32" y2="15"/>
+    <line x1="16.5" y1="15.5" x2="20.5" y2="19.5"/>
+    <line x1="47.5" y1="15.5" x2="43.5" y2="19.5"/>
+    <line x1="9" y1="29" x2="14.5" y2="30"/>
+    <line x1="55" y1="29" x2="49.5" y2="30"/>
+  </g>
+  <rect x="9" y="38" width="46" height="3.5" rx="1.75" fill="#0b3d91"/>
+  <rect x="15" y="44.5" width="34" height="2.5" rx="1.25" fill="#0b3d91" opacity=".7"/>
+  <rect x="21" y="50" width="22" height="2" rx="1" fill="#0b3d91" opacity=".45"/>
+</svg>

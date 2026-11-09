@@ -1,0 +1,38 @@
+@model List<StudentDocument>
+@{
+    ViewData["Title"] = "Documents";
+    var store = (DataStore)ViewBag.Store;
+}
+<div class="page-head"><div><h1>Document retrieval</h1><p>Find ID copies, high school certificates and other documents across all student records.</p></div></div>
+<form method="get" class="card card-body mb-3">
+    <div class="row g-2">
+        <div class="col-md-6"><div class="input-group"><span class="input-group-text bg-white"><i class="bi bi-search"></i></span><input name="q" value="@ViewBag.Q" class="form-control" placeholder="Student name, number or ID number" /></div></div>
+        <div class="col-md-4"><select name="type" class="form-select"><option value="">All document types</option>@foreach (var t in DocumentTypes.All) { <option selected="@(t == (string?)ViewBag.Type)">@t</option> }</select></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Search</button></div>
+    </div>
+</form>
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead><tr><th>Student</th><th>Document</th><th>File</th><th>Uploaded</th><th>Status</th><th></th></tr></thead>
+            <tbody>
+            @foreach (var x in Model)
+            {
+                var s = store.Student(x.StudentId);
+                <tr>
+                    <td><a asp-action="Student" asp-route-id="@x.StudentId" class="fw-semibold">@s?.FullName</a><div class="small text-muted">@s?.StudentNumber · @s?.IdNumber</div></td>
+                    <td>@x.Type</td>
+                    <td class="small text-truncate" style="max-width:200px">@x.FileName<div class="text-muted">@FileSize(x.Size)</div></td>
+                    <td class="small">@x.UploadedAt.ToString("d MMM yyyy")</td>
+                    <td>@if (x.Verified) { <span class="status status-Approved">Verified</span> } else { <span class="status status-Pending">Unverified</span> }</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-primary" asp-controller="Files" asp-action="Document" asp-route-id="@x.Id" target="_blank"><i class="bi bi-eye"></i></a>
+                        <a class="btn btn-sm btn-outline-secondary" asp-controller="Files" asp-action="Document" asp-route-id="@x.Id" asp-route-download="true"><i class="bi bi-download"></i></a>
+                    </td>
+                </tr>
+            }
+            @if (Model.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">No documents found.</td></tr> }
+            </tbody>
+        </table>
+    </div>
+</div>

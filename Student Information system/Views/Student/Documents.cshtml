@@ -1,0 +1,40 @@
+@model List<StudentDocument>
+@{ ViewData["Title"] = "My documents"; }
+<div class="page-head"><div><h1>My documents</h1><p>Upload and retrieve your ID copy, high school certificate and other supporting documents.</p></div></div>
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-cloud-upload"></i> Upload a document</div>
+            <div class="card-body">
+                <form asp-action="Documents" method="post" enctype="multipart/form-data">
+                    <div class="mb-3"><label class="form-label">Document type</label>
+                        <select name="type" class="form-select" required>@foreach (var t in DocumentTypes.All) { <option>@t</option> }</select></div>
+                    <div class="mb-3"><label class="form-label">File (PDF, JPG, PNG · max 20 MB)</label><input type="file" name="file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required /></div>
+                    <button class="btn btn-primary w-100"><i class="bi bi-upload"></i> Upload</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header"><i class="bi bi-folder2-open"></i> Documents on record (@Model.Count)</div>
+            @if (Model.Count == 0) { <div class="card-body text-muted">No documents uploaded yet.</div> }
+            <ul class="list-group list-group-flush">
+            @foreach (var d in Model)
+            {
+                <li class="list-group-item d-flex align-items-center gap-3 py-3">
+                    <div class="doc-thumb"><i class="bi bi-file-earmark-@(d.ContentType.Contains("pdf") ? "pdf" : "image")"></i></div>
+                    <div class="flex-grow-1 min-w-0">
+                        <div class="fw-semibold">@d.Type</div>
+                        <div class="small text-muted text-truncate">@d.FileName · @FileSize(d.Size) · @d.UploadedAt.ToString("d MMM yyyy")</div>
+                    </div>
+                    @if (d.Verified) { <span class="status status-Approved d-none d-sm-inline"><i class="bi bi-patch-check"></i> Verified</span> }
+                    else { <span class="status status-Pending d-none d-sm-inline">Awaiting verification</span> }
+                    <a class="btn btn-sm btn-outline-primary" asp-controller="Files" asp-action="Document" asp-route-id="@d.Id" target="_blank" title="View"><i class="bi bi-eye"></i></a>
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Files" asp-action="Document" asp-route-id="@d.Id" asp-route-download="true" title="Download"><i class="bi bi-download"></i></a>
+                </li>
+            }
+            </ul>
+        </div>
+    </div>
+</div>

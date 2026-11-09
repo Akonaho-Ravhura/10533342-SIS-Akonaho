@@ -1,0 +1,57 @@
+@model List<CourseMaterial>
+@{
+    ViewData["Title"] = "Course content";
+    var courses = (List<Course>)ViewBag.Courses;
+    var current = ViewBag.Current as Course;
+    var store = (DataStore)ViewBag.Store;
+}
+<div class="page-head"><div><h1>Course content</h1><p>Notes, slides, assignments and links published by your lecturers.</p></div></div>
+
+@if (courses.Count == 0)
+{
+    <div class="card card-body text-muted">Course content becomes available once your course registration is approved. <a asp-action="Courses">Go to course registration</a>.</div>
+}
+else
+{
+    <ul class="nav nav-pills mb-3 gap-1 flex-wrap">
+        @foreach (var c in courses)
+        {
+            <li class="nav-item"><a class="nav-link @(c.Code == current?.Code ? "active" : "")" asp-action="Materials" asp-route-id="@c.Code">@c.Code</a></li>
+        }
+    </ul>
+    <div class="card mb-3">
+        <div class="card-body">
+            <h2 class="h5 fw-bold text-navy mb-1">@current!.Code – @current.Name</h2>
+            <div class="text-muted small">@current.Description</div>
+            <div class="small mt-2"><i class="bi bi-person"></i> @store.UserName(current.LecturerId) · @current.Credits credits · @current.Semester</div>
+        </div>
+    </div>
+    @if (Model.Count == 0) { <div class="text-muted">No content has been published for this course yet.</div> }
+    @foreach (var wk in Model.GroupBy(m => m.Week))
+    {
+        <div class="week-label">Week @wk.Key</div>
+        <div class="d-flex flex-column gap-2">
+            @foreach (var m in wk)
+            {
+                <div class="material">
+                    <div class="kind"><i class="bi bi-@KindIcon(m.Kind)"></i></div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex flex-wrap justify-content-between gap-2">
+                            <div class="fw-semibold">@m.Title <span class="badge badge-soft ms-1">@m.Kind</span></div>
+                            @if (m.DueDate.HasValue) { <span class="small fw-semibold @(m.DueDate < DateTime.Today ? "text-muted" : "text-danger")"><i class="bi bi-alarm"></i> Due @m.DueDate.Value.ToString("d MMM yyyy")</span> }
+                        </div>
+                        <div class="small text-muted">@m.Description</div>
+                        <div class="mt-2 d-flex gap-2 flex-wrap">
+                            @if (m.StoredName != null)
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-controller="Files" asp-action="Material" asp-route-id="@m.Id" target="_blank"><i class="bi bi-eye"></i> Open</a>
+                                <a class="btn btn-sm btn-outline-secondary" asp-controller="Files" asp-action="Material" asp-route-id="@m.Id" asp-route-download="true"><i class="bi bi-download"></i> @m.FileName</a>
+                            }
+                            @if (m.Url != null) { <a class="btn btn-sm btn-outline-primary" href="@m.Url" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Open link</a> }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
